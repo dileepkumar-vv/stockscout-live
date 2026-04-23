@@ -2,13 +2,26 @@ const fetch = require("node-fetch");
 
 async function fetchStock(ticker) {
   try {
-    const url = `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${ticker}.NS?modules=price,summaryDetail,defaultKeyStatistics,financialData`;
+    const url = `https://query2.finance.yahoo.com/v10/finance/quoteSummary/${ticker}.NS?modules=price,summaryDetail,defaultKeyStatistics,financialData`;
 
-    const resp = await fetch(url);
-    if (!resp.ok) return null;
+    const resp = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0",
+        "Accept": "application/json"
+      }
+    });
+
+    if (!resp.ok) {
+      console.log("Yahoo rejected:", ticker);
+      return null;
+    }
 
     const data = await resp.json();
-    if (!data.quoteSummary || !data.quoteSummary.result) return null;
+
+    if (!data.quoteSummary || !data.quoteSummary.result) {
+      console.log("Invalid Yahoo data:", ticker);
+      return null;
+    }
 
     const r = data.quoteSummary.result[0];
 
@@ -29,6 +42,7 @@ async function fetchStock(ticker) {
       mc: cr(r.price.marketCap?.raw)
     };
   } catch (e) {
+    console.log("Fetch error:", ticker, e);
     return null;
   }
 }
