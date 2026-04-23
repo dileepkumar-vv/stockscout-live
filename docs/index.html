@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>StockScout Live</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<script>
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("service-worker.js");
+  }
+</script>
+<body class="theme-dark">
+  <div id="app">
+    <header class="app-header">
+      <div class="app-title">StockScout</div>
+      <button id="themeToggle" class="icon-btn" aria-label="Toggle theme">
+        🌓
+      </button>
+    </header>
+
+    <main class="app-main">
+      <section id="tab-home" class="tab active">
+        <div class="section-header">
+          <h2>Overview</h2>
+        </div>
+        <div id="homeContent" class="cards-list">
+          <div class="card info-card">
+            <div class="card-title">Welcome</div>
+            <div class="card-body">
+              <p>Live NIFTY 500 screener with custom stocks, mobile‑first UI, and dark/light theme toggle.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="tab-screen" class="tab">
+        <div class="section-header">
+          <h2>Screen</h2>
+        </div>
+
+        <div class="filters-scroll">
+          <div class="filter-chip">
+            <label>Min ROE (%)</label>
+            <input id="f-roe" type="number" class="chip-input" placeholder="15">
+          </div>
+          <div class="filter-chip">
+            <label>Max Debt/Equity</label>
+            <input id="f-de" type="number" class="chip-input" placeholder="1">
+          </div>
+          <div class="filter-chip">
+            <label>Min Mkt Cap (Cr)</label>
+            <input id="f-mc" type="number" class="chip-input" placeholder="5000">
+          </div>
+        </div>
+
+        <div class="section-actions">
+          <button id="btnRunScreen" class="primary-btn">Run Screen</button>
+        </div>
+
+        <div id="screenResults" class="cards-list"></div>
+      </section>
+
+      <section id="tab-search" class="tab">
+        <div class="section-header">
+          <h2>Search</h2>
+        </div>
+        <div class="search-bar">
+          <input id="searchInput" type="text" placeholder="Enter NSE symbol (e.g., TCS, RELIANCE)">
+          <button id="btnSearch" class="primary-btn">Search</button>
+        </div>
+        <div id="searchResult" class="cards-list"></div>
+      </section>
+
+      <section id="tab-watchlist" class="tab">
+        <div class="section-header">
+          <h2>Watchlist</h2>
+        </div>
+        <div class="search-bar">
+          <input id="customTicker" type="text" placeholder="Add custom NSE symbol (e.g., IIFL)">
+          <button id="btnAddCustom" class="secondary-btn">Add</button>
+        </div>
+        <div id="watchlist" class="chips-list"></div>
+      </section>
+    </main>
+
+    <nav class="bottom-nav">
+      <button class="nav-item active" data-tab="home">
+        <span>Home</span>
+      </button>
+      <button class="nav-item" data-tab="screen">
+        <span>Screen</span>
+      </button>
+      <button class="nav-item" data-tab="search">
+        <span>Search</span>
+      </button>
+      <button class="nav-item" data-tab="watchlist">
+        <span>Watchlist</span>
+      </button>
+    </nav>
+  </div>
+
+  <script src="assets/app.js"></script>
+</body>
+</html>
