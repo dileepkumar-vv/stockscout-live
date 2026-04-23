@@ -1,105 +1,134 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>StockScout Live</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="assets/styles.css">
+  <meta charset="UTF-8" />
+  <title>StockScout7 – Find the next multibagger</title>
+  <link rel="stylesheet" href="assets/styles.css" />
 </head>
-<script>
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("service-worker.js");
-  }
-</script>
-<body class="theme-dark">
-  <div id="app">
-    <header class="app-header">
-      <div class="app-title">StockScout</div>
-      <button id="themeToggle" class="icon-btn" aria-label="Toggle theme">
-        🌓
-      </button>
-    </header>
+<body>
+  <div class="container">
+    <h1>Find the next multibagger</h1>
 
-    <main class="app-main">
-      <section id="tab-home" class="tab active">
-        <div class="section-header">
-          <h2>Overview</h2>
-        </div>
-        <div id="homeContent" class="cards-list">
-          <div class="card info-card">
-            <div class="card-title">Welcome</div>
-            <div class="card-body">
-              <p>Live NIFTY 500 screener with custom stocks, mobile‑first UI, and dark/light theme toggle.</p>
+    <section class="sectors">
+      <h2>Sectors</h2>
+      <div class="sector-buttons">
+        <button data-sector="ALL" class="sector-btn active">All</button>
+        <button data-sector="Financial Services" class="sector-btn">Financials</button>
+        <button data-sector="Information Technology" class="sector-btn">Technology</button>
+        <button data-sector="Healthcare" class="sector-btn">Healthcare</button>
+        <button data-sector="Fast Moving Consumer Goods" class="sector-btn">Consumer</button>
+        <button data-sector="Oil, Gas & Consumable Fuels" class="sector-btn">Energy</button>
+        <button data-sector="Capital Goods" class="sector-btn">Industrials</button>
+        <button data-sector="Automobile & Auto Components" class="sector-btn">Auto</button>
+        <button data-sector="Chemicals" class="sector-btn">Chemicals</button>
+      </div>
+    </section>
+
+    <section class="thresholds">
+      <h2>Thresholds</h2>
+      <div class="threshold-grid">
+        <div class="threshold-col">
+          <label>
+            Fall from 52W High (%)
+            <div class="input-row">
+              <span>&gt;</span>
+              <input type="number" id="fall52" value="30" />
             </div>
-          </div>
-        </div>
-      </section>
+          </label>
 
-      <section id="tab-screen" class="tab">
-        <div class="section-header">
-          <h2>Screen</h2>
+          <label>
+            Promoter Hold (%)
+            <div class="input-row">
+              <span>&gt;</span>
+              <input type="number" id="promHold" value="35" />
+            </div>
+          </label>
+
+          <label>
+            Revenue Growth 3Yr (%)
+            <div class="input-row">
+              <span>&gt;</span>
+              <input type="number" id="revGrowth" value="10" />
+            </div>
+          </label>
+
+          <label>
+            ROE (%)
+            <div class="input-row">
+              <span>&gt;</span>
+              <input type="number" id="roe" value="8" />
+            </div>
+          </label>
         </div>
 
-        <div class="filters-scroll">
-          <div class="filter-chip">
-            <label>Min ROE (%)</label>
-            <input id="f-roe" type="number" class="chip-input" placeholder="15">
-          </div>
-          <div class="filter-chip">
-            <label>Max Debt/Equity</label>
-            <input id="f-de" type="number" class="chip-input" placeholder="1">
-          </div>
-          <div class="filter-chip">
-            <label>Min Mkt Cap (Cr)</label>
-            <input id="f-mc" type="number" class="chip-input" placeholder="5000">
-          </div>
-        </div>
+        <div class="threshold-col">
+          <label>
+            Debt / Equity
+            <div class="input-row">
+              <span>&lt;</span>
+              <input type="number" id="de" value="1" step="0.1" />
+            </div>
+          </label>
 
-        <div class="section-actions">
-          <button id="btnRunScreen" class="primary-btn">Run Screen</button>
-        </div>
+          <label>
+            Pledged (%)
+            <div class="input-row">
+              <span>&lt;</span>
+              <input type="number" id="pledged" value="10" />
+            </div>
+          </label>
 
-        <div id="screenResults" class="cards-list"></div>
-      </section>
+          <label>
+            Current Ratio
+            <div class="input-row">
+              <span>&gt;</span>
+              <input type="number" id="cr" value="1" step="0.1" />
+            </div>
+          </label>
 
-      <section id="tab-search" class="tab">
-        <div class="section-header">
-          <h2>Search</h2>
+          <label>
+            Min Market Cap (Cr)
+            <div class="input-row">
+              <span>&gt;</span>
+              <input type="number" id="mc" value="500" />
+            </div>
+          </label>
         </div>
-        <div class="search-bar">
-          <input id="searchInput" type="text" placeholder="Enter NSE symbol (e.g., TCS, RELIANCE)">
-          <button id="btnSearch" class="primary-btn">Search</button>
-        </div>
-        <div id="searchResult" class="cards-list"></div>
-      </section>
+      </div>
+    </section>
 
-      <section id="tab-watchlist" class="tab">
-        <div class="section-header">
-          <h2>Watchlist</h2>
-        </div>
-        <div class="search-bar">
-          <input id="customTicker" type="text" placeholder="Add custom NSE symbol (e.g., IIFL)">
-          <button id="btnAddCustom" class="secondary-btn">Add</button>
-        </div>
-        <div id="watchlist" class="chips-list"></div>
-      </section>
-    </main>
+    <section class="query-box">
+      <h2>Screener.in Query</h2>
+      <pre id="screenerQuery"></pre>
+    </section>
 
-    <nav class="bottom-nav">
-      <button class="nav-item active" data-tab="home">
-        <span>Home</span>
-      </button>
-      <button class="nav-item" data-tab="screen">
-        <span>Screen</span>
-      </button>
-      <button class="nav-item" data-tab="search">
-        <span>Search</span>
-      </button>
-      <button class="nav-item" data-tab="watchlist">
-        <span>Watchlist</span>
-      </button>
-    </nav>
+    <div class="actions">
+      <button id="runScreen">Run Screen</button>
+    </div>
+
+    <section class="results">
+      <h2>Results</h2>
+      <table id="resultsTable">
+        <thead>
+          <tr>
+            <th>Ticker</th>
+            <th>Company</th>
+            <th>Price</th>
+            <th>MC (Cr)</th>
+            <th>ROE (%)</th>
+            <th>Rev Gr 3Y (%)</th>
+            <th>D/E</th>
+            <th>Prom (%)</th>
+            <th>Pledged (%)</th>
+            <th>52W High</th>
+            <th>52W Low</th>
+            <th>Fall from 52W High (%)</th>
+            <th>Sector</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
   </div>
 
   <script src="assets/app.js"></script>
