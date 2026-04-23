@@ -1,14 +1,14 @@
 const cors = require("cors");
 app.use(cors());
+app.get("/api/test", (req, res) => {
+  res.json({ status: "ok" });
+});
 const express = require("express");
-const cors = require("cors");
 const fetchStock = require("./fetchStock");
 const nifty500 = require("./nifty500.json");
 
 const app = express();
 const PORT = 3000;
-
-app.use(cors());
 
 let cache = {};
 let cacheTime = 0;
