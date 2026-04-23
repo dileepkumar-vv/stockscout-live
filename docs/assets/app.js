@@ -1,249 +1,162 @@
 const API_BASE = "https://stockscout-live.onrender.com";
 
-let DB = [];
-let watchlist = [];
+const state = {
+  sector: "ALL",
+  data: []
+};
 
-function loadWatchlist() {
-  try {
-    watchlist = JSON.parse(localStorage.getItem("watchlist") || "[]");
-  } catch {
-    watchlist = [];
-  }
-  renderWatchlist();
+const els = {
+  fall52: document.getElementById("fall52"),
+  de: document.getElementById("de"),
+  promHold: document.getElementById("promHold"),
+  pledged: document.getElementById("pledged"),
+  revGrowth: document.getElementById("revGrowth"),
+  roe: document.getElementById("roe"),
+  cr: document.getElementById("cr"),
+  mc: document.getElementById("mc"),
+  screenerQuery: document.getElementById("screenerQuery"),
+  runScreen: document.getElementById("runScreen"),
+  tableBody: document.querySelector("#resultsTable tbody"),
+  sectorButtons: document.querySelectorAll(".sector-btn")
+};
+
+function buildScreenerQuery() {
+  const fall = Number(els.fall52.value) || 0;
+  const de = Number(els.de.value) || 0;
+  const prom = Number(els.promHold.value) || 0;
+  const pled = Number(els.pledged.value) || 0;
+  const rg = Number(els.revGrowth.value) || 0;
+  const roe = Number(els.roe.value) || 0;
+  const cr = Number(els.cr.value) || 0;
+  const mc = Number(els.mc.value) || 0;
+
+  const lines = [
+    `Down from 52w high > ${fall}`,
+    `Debt to equity < ${de}`,
+    `Promoter holding > ${prom}`,
+    `Pledged percentage < ${pled}`,
+    `Sales growth 3Years > ${rg}`,
+    `Market Capitalization > ${mc}`,
+    `Return on equity > ${roe}`,
+    `Current Ratio > ${cr}`
+  ];
+
+  els.screenerQuery.textContent = lines.join(" AND\n");
 }
 
-function saveWatchlist() {
-  localStorage.setItem("watchlist", JSON.stringify(watchlist));
+function fallFromHigh(p, h) {
+  if (!h || !p) return 0;
+  return Math.round(((h - p) / h) * 100);
 }
 
-function renderWatchlist() {
-  const container = document.getElementById("watchlist");
-  container.innerHTML = "";
-  watchlist.forEach(t => {
-    const chip = document.createElement("div");
-    chip.className = "chip";
-    chip.innerHTML = `
-      <span>${t}</span>
-      <button data-t="${t}">✕</button>
+function passesFilters(stock) {
+  const fall = Number(els.fall52.value) || 0;
+  const de = Number(els.de.value) || 0;
+  const prom = Number(els.promHold.value) || 0;
+  const pled = Number(els.pledged.value) || 0;
+  const rg = Number(els.revGrowth.value) || 0;
+  const roe = Number(els.roe.value) || 0;
+  const cr = Number(els.cr.value) || 0;
+  const mc = Number(els.mc.value) || 0;
+
+  const f = fallFromHigh(stock.p, stock.h);
+
+  if (f < fall) return false;
+  if (stock.de > de) return false;
+  if (stock.pr < prom) return false;
+  if (stock.pl > pled) return false;
+  if (stock.rg < rg) return false;
+  if (stock.roe < roe) return false;
+  if (stock.cr < cr) return false;
+  if (stock.mc < mc) return false;
+
+  if (state.sector !== "ALL" && stock.s !== state.sector) return false;
+
+  return true;
+}
+
+function renderTable() {
+  els.tableBody.innerHTML = "";
+
+  const filtered = state.data.filter(passesFilters);
+
+  filtered.forEach(s => {
+    const tr = document.createElement("tr");
+
+    const f = fallFromHigh(s.p, s.h);
+
+    tr.innerHTML = `
+      <td>${s.t}</td>
+      <td>${s.n}</td>
+      <td>${s.p.toFixed(2)}</td>
+      <td>${s.mc}</td>
+      <td>${s.roe}</td>
+      <td>${s.rg}</td>
+      <td>${s.de.toFixed(2)}</td>
+      <td>${s.pr}</td>
+      <td>${s.pl}</td>
+      <td>${s.h.toFixed(2)}</td>
+      <td>${s.l.toFixed(2)}</td>
+      <td>${f}</td>
+      <td>${s.s}</td>
     `;
-    container.appendChild(chip);
-  });
 
-  container.querySelectorAll("button").forEach(btn => {
-    btn.onclick = () => {
-      const t = btn.getAttribute("data-t");
-      watchlist = watchlist.filter(x => x !== t);
-      saveWatchlist();
-      renderWatchlist();
-    };
+    els.tableBody.appendChild(tr);
   });
 }
 
-async function loadDB() {
+async function loadData() {
+  els.runScreen.disabled = true;
+  els.runScreen.textContent = "Loading...";
+
   try {
-    const resp = await fetch(
-      `${API_BASE}/api/stocks?extra=${watchlist.join(",")}`
-    );
-    DB = await resp.json();
+    const resp = await fetch(`${API_BASE}/api/screen`);
+    const json = await resp.json();
+    state.data = json;
+    renderTable();
   } catch (e) {
-    console.error("Failed to load DB", e);
+    console.error(e);
+    alert("Failed to load data");
+  } finally {
+    els.runScreen.disabled = false;
+    els.runScreen.textContent = "Run Screen";
   }
 }
 
-function scoreStock(s) {
-  let score = 0;
-  if (s.roe >= 15) score += 2;
-  if (s.de <= 1) score += 2;
-  if (s.rg >= 10) score += 1;
-  if (s.mc >= 5000) score += 1;
-  return score;
-}
-
-function renderScreenResults(list) {
-  const container = document.getElementById("screenResults");
-  container.innerHTML = "";
-
-  if (!list.length) {
-    container.innerHTML =
-      '<div class="card"><div class="card-body">No matches.</div></div>';
-    return;
-  }
-
-  list.forEach(s => {
-    const card = document.createElement("div");
-    card.className = "card";
-
-    const changeBadge =
-      s.p >= (s.l + s.h) / 2
-        ? '<span class="badge badge-success">Strong</span>'
-        : '<span class="badge badge-danger">Weak</span>';
-
-    card.innerHTML = `
-      <div class="card-title">
-        ${s.t} <span class="card-subtitle">· ${s.n || ""}</span>
-      </div>
-      <div class="card-row">
-        <span class="label">Price</span>
-        <span class="value">₹${s.p.toFixed(2)}</span>
-      </div>
-      <div class="card-row">
-        <span class="label">52W</span>
-        <span class="value">₹${s.l.toFixed(0)} – ₹${s.h.toFixed(0)}</span>
-      </div>
-      <div class="card-row">
-        <span class="label">ROE</span>
-        <span class="value">${s.roe}%</span>
-      </div>
-      <div class="card-row">
-        <span class="label">D/E</span>
-        <span class="value">${s.de.toFixed(2)}</span>
-      </div>
-      <div class="card-row">
-        <span class="label">Mkt Cap</span>
-        <span class="value">${s.mc} Cr</span>
-      </div>
-      <div class="card-row">
-        <span class="label">Score</span>
-        <span class="value">${s._score} ${changeBadge}</span>
-      </div>
-    `;
-    container.appendChild(card);
+function initEvents() {
+  [
+    els.fall52,
+    els.de,
+    els.promHold,
+    els.pledged,
+    els.revGrowth,
+    els.roe,
+    els.cr,
+    els.mc
+  ].forEach(input => {
+    input.addEventListener("input", () => {
+      buildScreenerQuery();
+      renderTable();
+    });
   });
-}
 
-async function runScreen() {
-  await loadDB();
+  els.runScreen.addEventListener("click", () => {
+    loadData();
+  });
 
-  const roeMin = parseFloat(document.getElementById("f-roe").value || "0");
-  const deMax = parseFloat(document.getElementById("f-de").value || "999");
-  const mcMin = parseFloat(document.getElementById("f-mc").value || "0");
-
-  const filtered = DB.filter(s => {
-    if (s.roe < roeMin) return false;
-    if (s.de > deMax) return false;
-    if (s.mc < mcMin) return false;
-    return true;
-  }).map(s => ({ ...s, _score: scoreStock(s) }));
-
-  filtered.sort((a, b) => b._score - a._score);
-  renderScreenResults(filtered);
-}
-
-async function searchStock() {
-  const q = document.getElementById("searchInput").value.trim().toUpperCase();
-  if (!q) return;
-
-  const container = document.getElementById("searchResult");
-  container.innerHTML = "";
-
-  try {
-    const resp = await fetch(`${API_BASE}/api/stock?ticker=${q}`);
-    const s = await resp.json();
-    if (!s || s.error) {
-      container.innerHTML =
-        '<div class="card"><div class="card-body">Not found.</div></div>';
-      return;
-    }
-
-    s._score = scoreStock(s);
-
-    const card = document.createElement("div");
-    card.className = "card";
-    card.innerHTML = `
-      <div class="card-title">
-        ${s.t} <span class="card-subtitle">· ${s.n || ""}</span>
-      </div>
-      <div class="card-row">
-        <span class="label">Price</span>
-        <span class="value">₹${s.p.toFixed(2)}</span>
-      </div>
-      <div class="card-row">
-        <span class="label">52W</span>
-        <span class="value">₹${s.l.toFixed(0)} – ₹${s.h.toFixed(0)}</span>
-      </div>
-      <div class="card-row">
-        <span class="label">ROE</span>
-        <span class="value">${s.roe}%</span>
-      </div>
-      <div class="card-row">
-        <span class="label">D/E</span>
-        <span class="value">${s.de.toFixed(2)}</span>
-      </div>
-      <div class="card-row">
-        <span class="label">Mkt Cap</span>
-        <span class="value">${s.mc} Cr</span>
-      </div>
-      <div class="card-row">
-        <span class="label">Score</span>
-        <span class="value">${s._score}</span>
-      </div>
-    `;
-    container.appendChild(card);
-  } catch (e) {
-    container.innerHTML =
-      '<div class="card"><div class="card-body">Error fetching data.</div></div>';
-  }
-}
-
-function addCustomTicker() {
-  const input = document.getElementById("customTicker");
-  const t = input.value.trim().toUpperCase();
-  if (!t) return;
-  if (!watchlist.includes(t)) {
-    watchlist.push(t);
-    saveWatchlist();
-    renderWatchlist();
-  }
-  input.value = "";
-}
-
-function setupTabs() {
-  const tabs = document.querySelectorAll(".tab");
-  const navItems = document.querySelectorAll(".bottom-nav .nav-item");
-
-  navItems.forEach(btn => {
-    btn.onclick = () => {
-      const tab = btn.getAttribute("data-tab");
-
-      navItems.forEach(b => b.classList.remove("active"));
+  els.sectorButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      els.sectorButtons.forEach(b => b.classList.remove("active"));
       btn.classList.add("active");
-
-      tabs.forEach(t => t.classList.remove("active"));
-      document.getElementById(`tab-${tab}`).classList.add("active");
-    };
+      state.sector = btn.dataset.sector;
+      renderTable();
+    });
   });
 }
 
-function setupThemeToggle() {
-  const btn = document.getElementById("themeToggle");
-  const saved = localStorage.getItem("theme") || "dark";
-  document.body.className = saved === "light" ? "theme-light" : "theme-dark";
-
-  btn.onclick = () => {
-    const isDark = document.body.classList.contains("theme-dark");
-    document.body.classList.toggle("theme-dark", !isDark);
-    document.body.classList.toggle("theme-light", isDark);
-    localStorage.setItem("theme", isDark ? "light" : "dark");
-  };
+function init() {
+  buildScreenerQuery();
+  initEvents();
 }
 
-function setupEvents() {
-  document
-    .getElementById("btnRunScreen")
-    .addEventListener("click", runScreen);
-
-  document
-    .getElementById("btnSearch")
-    .addEventListener("click", searchStock);
-
-  document
-    .getElementById("btnAddCustom")
-    .addEventListener("click", addCustomTicker);
-}
-
-window.addEventListener("DOMContentLoaded", async () => {
-  setupTabs();
-  setupThemeToggle();
-  loadWatchlist();
-  await loadDB();
-});
+init();
