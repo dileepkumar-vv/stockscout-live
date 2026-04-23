@@ -40,11 +40,7 @@ async function getAllStocks(extraTickers = []) {
   return results;
 }
 
-//
-// ----------------------
-//  API: SEARCH
-// ----------------------
-//
+// SEARCH
 app.get("/api/search", (req, res) => {
   const q = (req.query.q || "").trim().toUpperCase();
   if (!q) return res.json([]);
@@ -53,11 +49,7 @@ app.get("/api/search", (req, res) => {
   res.json(matches);
 });
 
-//
-// ----------------------
-//  API: SCREEN (full list)
-// ----------------------
-//
+// SCREEN – raw list (frontend will filter)
 app.get("/api/screen", async (req, res) => {
   try {
     const data = await getAllStocks();
@@ -68,11 +60,7 @@ app.get("/api/screen", async (req, res) => {
   }
 });
 
-//
-// ----------------------
-//  API: VERDICT
-// ----------------------
-//
+// VERDICT – simple example
 app.get("/api/verdict", async (req, res) => {
   const t = (req.query.q || "").trim().toUpperCase();
   if (!t) return res.status(400).json({ error: "Missing ticker" });
@@ -80,22 +68,18 @@ app.get("/api/verdict", async (req, res) => {
   const data = await fetchStock(t);
   if (!data) return res.status(404).json({ error: "Not found" });
 
-  // Simple verdict logic
-  const verdict = data.price > data.prevClose ? "Bullish" : "Bearish";
+  const verdict = data.p > data.h * 0.8 ? "Expensive" : "Reasonable";
 
   res.json({
     ticker: t,
     verdict,
-    price: data.price,
-    prevClose: data.prevClose
+    price: data.p,
+    high52: data.h,
+    low52: data.l
   });
 });
 
-//
-// ----------------------
-//  API: CHECKLIST
-// ----------------------
-//
+// CHECKLIST – simple example
 app.get("/api/checklist", async (req, res) => {
   const t = (req.query.q || "").trim().toUpperCase();
   if (!t) return res.status(400).json({ error: "Missing ticker" });
@@ -104,20 +88,17 @@ app.get("/api/checklist", async (req, res) => {
   if (!data) return res.status(404).json({ error: "Not found" });
 
   const checklist = {
-    above200dma: data.price > data.ma200,
-    above50dma: data.price > data.ma50,
-    volumeSpike: data.volume > data.avgVolume,
-    bullish: data.price > data.prevClose
+    above200dma: false, // placeholder
+    above50dma: false,  // placeholder
+    lowDebt: data.de < 1,
+    goodROE: data.roe > 8,
+    healthyCR: data.cr > 1
   };
 
   res.json({ ticker: t, checklist });
 });
 
-//
-// ----------------------
-//  API: ALL STOCKS (raw)
-// ----------------------
-//
+// ALL STOCKS
 app.get("/api/stocks", async (req, res) => {
   try {
     const extra = req.query.extra
@@ -132,11 +113,7 @@ app.get("/api/stocks", async (req, res) => {
   }
 });
 
-//
-// ----------------------
-//  API: SINGLE STOCK
-// ----------------------
-//
+// SINGLE STOCK
 app.get("/api/stock", async (req, res) => {
   const t = (req.query.ticker || "").trim().toUpperCase();
   if (!t) return res.status(400).json({ error: "Missing ticker" });
@@ -147,9 +124,5 @@ app.get("/api/stock", async (req, res) => {
   res.json(data);
 });
 
-// Render uses PORT from environment
 const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () =>
-  console.log(`Backend running on port ${PORT}`)
-);
+app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
