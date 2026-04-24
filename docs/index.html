@@ -6,129 +6,142 @@
   <link rel="stylesheet" href="assets/styles.css" />
 </head>
 <body>
-  <div class="container">
-    <h1>Find the next multibagger</h1>
+  <div class="bg-gradient"></div>
 
-    <section class="sectors">
-      <h2>Sectors</h2>
-      <div class="sector-buttons">
-        <button data-sector="ALL" class="sector-btn active">All</button>
-        <button data-sector="Financial Services" class="sector-btn">Financials</button>
-        <button data-sector="Information Technology" class="sector-btn">Technology</button>
-        <button data-sector="Healthcare" class="sector-btn">Healthcare</button>
-        <button data-sector="Fast Moving Consumer Goods" class="sector-btn">Consumer</button>
-        <button data-sector="Oil, Gas & Consumable Fuels" class="sector-btn">Energy</button>
-        <button data-sector="Capital Goods" class="sector-btn">Industrials</button>
-        <button data-sector="Automobile & Auto Components" class="sector-btn">Auto</button>
-        <button data-sector="Chemicals" class="sector-btn">Chemicals</button>
-      </div>
-    </section>
+  <div class="app-shell">
+    <header class="glass header">
+      <h1>Find the next multibagger</h1>
+    </header>
 
-    <section class="thresholds">
-      <h2>Thresholds</h2>
-      <div class="threshold-grid">
-        <div class="threshold-col">
-          <label>
-            Fall from 52W High (%)
-            <div class="input-row">
-              <span>&gt;</span>
-              <input type="number" id="fall52" value="30" />
+    <main class="main-layout">
+      <section class="glass card">
+        <h2>Sectors</h2>
+        <div class="sector-buttons">
+          <button data-sector="ALL" class="sector-btn active">All</button>
+          <button data-sector="Financial Services" class="sector-btn">Financials</button>
+          <button data-sector="Information Technology" class="sector-btn">Technology</button>
+          <button data-sector="Healthcare" class="sector-btn">Healthcare</button>
+          <button data-sector="Fast Moving Consumer Goods" class="sector-btn">Consumer</button>
+          <button data-sector="Oil, Gas & Consumable Fuels" class="sector-btn">Energy</button>
+          <button data-sector="Capital Goods" class="sector-btn">Industrials</button>
+          <button data-sector="Automobile & Auto Components" class="sector-btn">Auto</button>
+          <button data-sector="Chemicals" class="sector-btn">Chemicals</button>
+        </div>
+      </section>
+
+      <section class="glass card">
+        <h2>Thresholds</h2>
+        <div class="threshold-grid">
+          <div class="threshold-col">
+            <div class="field">
+              <label for="fall52">Fall from 52W High (%)</label>
+              <div class="input-row">
+                <span>&gt;</span>
+                <input type="number" id="fall52" step="1" min="0" />
+              </div>
             </div>
-          </label>
 
-          <label>
-            Promoter Hold (%)
-            <div class="input-row">
-              <span>&gt;</span>
-              <input type="number" id="promHold" value="35" />
+            <div class="field">
+              <label for="promHold">Promoter Hold (%)</label>
+              <div class="input-row">
+                <span>&gt;</span>
+                <input type="number" id="promHold" step="1" min="0" max="100" />
+              </div>
             </div>
-          </label>
 
-          <label>
-            Revenue Growth 3Yr (%)
-            <div class="input-row">
-              <span>&gt;</span>
-              <input type="number" id="revGrowth" value="10" />
+            <div class="field">
+              <label for="revGrowth">Revenue Growth 3Yr (%)</label>
+              <div class="input-row">
+                <span>&gt;</span>
+                <input type="number" id="revGrowth" step="1" min="0" />
+              </div>
             </div>
-          </label>
 
-          <label>
-            ROE (%)
-            <div class="input-row">
-              <span>&gt;</span>
-              <input type="number" id="roe" value="8" />
+            <div class="field">
+              <label for="roe">ROE (%)</label>
+              <div class="input-row">
+                <span>&gt;</span>
+                <input type="number" id="roe" step="1" min="0" />
+              </div>
             </div>
-          </label>
+          </div>
+
+          <div class="threshold-col">
+            <div class="field">
+              <label for="de">Debt / Equity</label>
+              <div class="input-row">
+                <span>&lt;</span>
+                <input type="number" id="de" step="0.1" min="0" />
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="pledged">Pledged (%)</label>
+              <div class="input-row">
+                <span>&lt;</span>
+                <input type="number" id="pledged" step="1" min="0" max="100" />
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="cr">Current Ratio</label>
+              <div class="input-row">
+                <span>&gt;</span>
+                <input type="number" id="cr" step="0.1" min="0" />
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="mc">Min Market Cap (Cr)</label>
+              <div class="input-row">
+                <span>&gt;</span>
+                <input type="number" id="mc" step="10" min="0" />
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div class="threshold-col">
-          <label>
-            Debt / Equity
-            <div class="input-row">
-              <span>&lt;</span>
-              <input type="number" id="de" value="1" step="0.1" />
-            </div>
-          </label>
-
-          <label>
-            Pledged (%)
-            <div class="input-row">
-              <span>&lt;</span>
-              <input type="number" id="pledged" value="10" />
-            </div>
-          </label>
-
-          <label>
-            Current Ratio
-            <div class="input-row">
-              <span>&gt;</span>
-              <input type="number" id="cr" value="1" step="0.1" />
-            </div>
-          </label>
-
-          <label>
-            Min Market Cap (Cr)
-            <div class="input-row">
-              <span>&gt;</span>
-              <input type="number" id="mc" value="500" />
-            </div>
-          </label>
+        <div class="card-footer">
+          <button id="resetFilters" class="ghost-btn">Reset to defaults</button>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <section class="query-box">
-      <h2>Screener.in Query</h2>
-      <pre id="screenerQuery"></pre>
-    </section>
+      <section class="glass card">
+        <div class="card-header-row">
+          <h2>Screener.in Query</h2>
+        </div>
+        <pre id="screenerQuery" class="query-box"></pre>
+        <div class="actions">
+          <button id="runScreen" class="primary-btn">Run Screen</button>
+        </div>
+      </section>
 
-    <div class="actions">
-      <button id="runScreen">Run Screen</button>
-    </div>
-
-    <section class="results">
-      <h2>Results</h2>
-      <table id="resultsTable">
-        <thead>
-          <tr>
-            <th>Ticker</th>
-            <th>Company</th>
-            <th>Price</th>
-            <th>MC (Cr)</th>
-            <th>ROE (%)</th>
-            <th>Rev Gr 3Y (%)</th>
-            <th>D/E</th>
-            <th>Prom (%)</th>
-            <th>Pledged (%)</th>
-            <th>52W High</th>
-            <th>52W Low</th>
-            <th>Fall from 52W High (%)</th>
-            <th>Sector</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </section>
+      <section class="glass card full-width">
+        <h2>Results</h2>
+        <div class="table-wrapper">
+          <table id="resultsTable">
+            <thead>
+              <tr>
+                <th>Ticker</th>
+                <th>Company</th>
+                <th>Price</th>
+                <th>MC (Cr)</th>
+                <th>ROE (%)</th>
+                <th>Rev Gr 3Y (%)</th>
+                <th>D/E</th>
+                <th>Prom (%)</th>
+                <th>Pledged (%)</th>
+                <th>52W High</th>
+                <th>52W Low</th>
+                <th>Fall from 52W High (%)</th>
+                <th>Sector</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
   </div>
 
   <script src="assets/app.js"></script>
