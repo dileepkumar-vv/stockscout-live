@@ -2,39 +2,73 @@ const express = require("express");
 const cors = require("cors");
 const fetch = require("node-fetch");
 const fetchStock = require("./fetchStock");
-const nifty = require("./nifty500.json");
+const nifty500 = require("./nifty500.json");
 
 const app = express();
 app.use(cors());
+
+let cache = {};
+let cacheTime = 0;
 
 app.get("/api/test", (req, res) => {
   res.json({ status: "ok" });
 });
 
-// GLOBAL SEARCH (raw AlphaVantage)
-app.get("/api/global", async (req, res) => {
-  const q = (req.query.ticker || req.query.q || "").trim().toUpperCase();
-  if (!q) return res.status(400).json({ error: "Missing ticker" });
+async function getAllStocks(extraTickers = []) {
+  const now = Date.now();
 
-  const API = process.env.ALPHA_KEY;
+  if (now - cacheTime < 10 * 60 * 1000 && Object.keys(cache).length) {
+    return cache;
+  }
 
+  const tickers = [...new Set([...nifty500, ...extraTickers])]
+    .map(t => t.trim().toUpperCase())
+    .filter(Boolean);
+
+  const results = {};
+  for (const t of tickers) {
+    const data = await fetchStock(t);
+    if (data) results[t] = data;
+  }
+
+  cache = results;
+  cacheTime = now;
+
+  return results;
+}
+
+app.get("/api/search", (req, res) => {
+  const q = (req.query.q || "").trim().toUpperCase();
+  if (!q) return res.json([]);
+  const matches = nifty500.filter(t => t.includes(q));
+  res.json(matches);
+});
+
+app.get("/api/screen", async (req, res) => {
   try {
-    const searchUrl = `https://www.alphavantage.co/query?function=SYMBOL_SEARCH&keywords=${q}&apikey=${API}`;
-    const search = await fetch(searchUrl).then(r => r.json());
-
-    const quoteUrl = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${q}.NS&apikey=${API}`;
-    const quote = await fetch(quoteUrl).then(r => r.json());
-
-    res.json({ input: q, search, quote });
-
+    const data = await getAllStocks();
+    res.json(Object.values(data));
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    console.error("Screen error:", e);
+    res.status(500).json({ error: "Screening failed" });
   }
 });
 
-// SINGLE STOCK
+app.get("/api/stocks", async (req, res) => {
+  try {
+    const extra = req.query.extra
+      ? req.query.extra.split(",").map(s => s.trim().toUpperCase())
+      : [];
+    const data = await getAllStocks(extra);
+    res.json(Object.values(data));
+  } catch (e) {
+    console.error("Stocks error:", e);
+    res.status(500).json({ error: "Internal error" });
+  }
+});
+
 app.get("/api/stock", async (req, res) => {
-  const t = (req.query.ticker || req.query.q || "").trim().toUpperCase();
+  const t = (req.query.ticker || "").trim().toUpperCase();
   if (!t) return res.status(400).json({ error: "Missing ticker" });
 
   const data = await fetchStock(t);
@@ -43,17 +77,33 @@ app.get("/api/stock", async (req, res) => {
   res.json(data);
 });
 
-// SCREENER
-app.get("/api/screen", async (req, res) => {
-  const results = [];
+// GLOBAL SEARCH using TwelveData
+app.get("/api/global", async (req, res) => {
+  const q = (req.query.ticker || req.query.q || "").trim().toUpperCase();
+  if (!q) return res.status(400).json({ error: "Missing ticker" });
 
-  for (const t of nifty) {
-    const data = await fetchStock(t);
-    if (data) results.push(data);
+  const API = process.env.TWELVE_KEY;
+
+  try {
+    // symbol search
+    const searchUrl = new URL("https://api.twelvedata.com/symbol_search");
+    searchUrl.searchParams.set("apikey", API);
+    searchUrl.searchParams.set("symbol", q);
+    searchUrl.searchParams.set("exchange", "NSE");
+    const search = await fetch(searchUrl.toString()).then(r => r.json());
+
+    // quote
+    const quoteUrl = new URL("https://api.twelvedata.com/quote");
+    quoteUrl.searchParams.set("apikey", API);
+    quoteUrl.searchParams.set("symbol", `${q}.NSE`);
+    const quote = await fetch(quoteUrl.toString()).then(r => r.json());
+
+    res.json({ input: q, search, quote });
+  } catch (e) {
+    console.error("Global error:", e);
+    res.status(500).json({ error: e.message });
   }
-
-  res.json(results);
 });
 
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log("Server running on", PORT));
+app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
