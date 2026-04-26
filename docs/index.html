@@ -1,147 +1,102 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>StockScout7 – Find the next multibagger</title>
-  <link rel="stylesheet" href="assets/styles.css" />
+  <meta charset="UTF-8">
+  <title>StockScout Live</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="assets/styles.css">
 </head>
-<body>
-  <div class="bg-gradient"></div>
 
-  <div class="app-shell">
-    <header class="glass header">
-      <h1>Find the next multibagger</h1>
+<script>
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("service-worker.js");
+  }
+</script>
+
+<body class="theme-dark">
+  <div id="app">
+
+    <header class="app-header">
+      <div class="app-title">StockScout</div>
+      <button id="themeToggle" class="icon-btn" aria-label="Toggle theme">🌓</button>
     </header>
 
-    <main class="main-layout">
-      <section class="glass card">
-        <h2>Sectors</h2>
-        <div class="sector-buttons">
-          <button data-sector="ALL" class="sector-btn active">All</button>
-          <button data-sector="Financial Services" class="sector-btn">Financials</button>
-          <button data-sector="Information Technology" class="sector-btn">Technology</button>
-          <button data-sector="Healthcare" class="sector-btn">Healthcare</button>
-          <button data-sector="Fast Moving Consumer Goods" class="sector-btn">Consumer</button>
-          <button data-sector="Oil, Gas & Consumable Fuels" class="sector-btn">Energy</button>
-          <button data-sector="Capital Goods" class="sector-btn">Industrials</button>
-          <button data-sector="Automobile & Auto Components" class="sector-btn">Auto</button>
-          <button data-sector="Chemicals" class="sector-btn">Chemicals</button>
-        </div>
-      </section>
+    <main class="app-main">
 
-      <section class="glass card">
-        <h2>Thresholds</h2>
-        <div class="threshold-grid">
-          <div class="threshold-col">
-            <div class="field">
-              <label for="fall52">Fall from 52W High (%)</label>
-              <div class="input-row">
-                <span>&gt;</span>
-                <input type="number" id="fall52" step="1" min="0" />
-              </div>
-            </div>
-
-            <div class="field">
-              <label for="promHold">Promoter Hold (%)</label>
-              <div class="input-row">
-                <span>&gt;</span>
-                <input type="number" id="promHold" step="1" min="0" max="100" />
-              </div>
-            </div>
-
-            <div class="field">
-              <label for="revGrowth">Revenue Growth 3Yr (%)</label>
-              <div class="input-row">
-                <span>&gt;</span>
-                <input type="number" id="revGrowth" step="1" min="0" />
-              </div>
-            </div>
-
-            <div class="field">
-              <label for="roe">ROE (%)</label>
-              <div class="input-row">
-                <span>&gt;</span>
-                <input type="number" id="roe" step="1" min="0" />
-              </div>
-            </div>
-          </div>
-
-          <div class="threshold-col">
-            <div class="field">
-              <label for="de">Debt / Equity</label>
-              <div class="input-row">
-                <span>&lt;</span>
-                <input type="number" id="de" step="0.1" min="0" />
-              </div>
-            </div>
-
-            <div class="field">
-              <label for="pledged">Pledged (%)</label>
-              <div class="input-row">
-                <span>&lt;</span>
-                <input type="number" id="pledged" step="1" min="0" max="100" />
-              </div>
-            </div>
-
-            <div class="field">
-              <label for="cr">Current Ratio</label>
-              <div class="input-row">
-                <span>&gt;</span>
-                <input type="number" id="cr" step="0.1" min="0" />
-              </div>
-            </div>
-
-            <div class="field">
-              <label for="mc">Min Market Cap (Cr)</label>
-              <div class="input-row">
-                <span>&gt;</span>
-                <input type="number" id="mc" step="10" min="0" />
-              </div>
+      <!-- HOME TAB -->
+      <section id="tab-home" class="tab active">
+        <div class="section-header"><h2>Overview</h2></div>
+        <div id="homeContent" class="cards-list">
+          <div class="card info-card">
+            <div class="card-title">Welcome</div>
+            <div class="card-body">
+              <p>Live NIFTY 500 screener with custom stocks, mobile‑first UI, and dark/light theme toggle.</p>
             </div>
           </div>
         </div>
-
-        <div class="card-footer">
-          <button id="resetFilters" class="ghost-btn">Reset to defaults</button>
-        </div>
       </section>
 
-      <section class="glass card">
-        <div class="card-header-row">
-          <h2>Screener.in Query</h2>
+      <!-- SCREEN TAB -->
+      <section id="tab-screen" class="tab">
+        <div class="section-header"><h2>Screen</h2></div>
+
+        <div class="filters-scroll">
+          <div class="filter-chip">
+            <label>Min ROE (%)</label>
+            <input id="f-roe" type="number" class="chip-input" placeholder="15">
+          </div>
+          <div class="filter-chip">
+            <label>Max Debt/Equity</label>
+            <input id="f-de" type="number" class="chip-input" placeholder="1">
+          </div>
+          <div class="filter-chip">
+            <label>Min Mkt Cap (Cr)</label>
+            <input id="f-mc" type="number" class="chip-input" placeholder="5000">
+          </div>
         </div>
-        <pre id="screenerQuery" class="query-box"></pre>
-        <div class="actions">
-          <button id="runScreen" class="primary-btn">Run Screen</button>
+
+        <div class="section-actions">
+          <button id="btnRunScreen" class="primary-btn">Run Screen</button>
         </div>
+
+        <div id="screenResults" class="cards-list"></div>
       </section>
 
-      <section class="glass card full-width">
-        <h2>Results</h2>
-        <div class="table-wrapper">
-          <table id="resultsTable">
-            <thead>
-              <tr>
-                <th>Ticker</th>
-                <th>Company</th>
-                <th>Price</th>
-                <th>MC (Cr)</th>
-                <th>ROE (%)</th>
-                <th>Rev Gr 3Y (%)</th>
-                <th>D/E</th>
-                <th>Prom (%)</th>
-                <th>Pledged (%)</th>
-                <th>52W High</th>
-                <th>52W Low</th>
-                <th>Fall from 52W High (%)</th>
-                <th>Sector</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
+      <!-- SEARCH TAB -->
+      <section id="tab-search" class="tab">
+        <div class="section-header"><h2>Search</h2></div>
+
+        <div class="search-bar">
+          <input id="searchInput" type="text" placeholder="Search stocks (e.g., RELIANCE, TCS)">
+          <div id="autocompleteList" class="autocomplete-list"></div>
+          <button id="btnSearch" class="primary-btn">Search</button>
         </div>
+
+        <div id="searchResult" class="cards-list"></div>
       </section>
+
+      <!-- WATCHLIST TAB -->
+      <section id="tab-watchlist" class="tab">
+        <div class="section-header"><h2>Watchlist</h2></div>
+
+        <div class="search-bar">
+          <input id="customTicker" type="text" placeholder="Add custom NSE symbol (e.g., IIFL)">
+          <button id="btnAddCustom" class="secondary-btn">Add</button>
+        </div>
+
+        <div id="watchlist" class="chips-list"></div>
+      </section>
+
     </main>
+
+    <nav class="bottom-nav">
+      <button class="nav-item active" data-tab="home"><span>Home</span></button>
+      <button class="nav-item" data-tab="screen"><span>Screen</span></button>
+      <button class="nav-item" data-tab="search"><span>Search</span></button>
+      <button class="nav-item" data-tab="watchlist"><span>Watchlist</span></button>
+    </nav>
+
   </div>
 
   <script src="assets/app.js"></script>
