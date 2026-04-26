@@ -81,23 +81,25 @@ app.get("/api/stock", async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
-
 app.get("/api/global", async (req, res) => {
-  const t = (req.query.ticker || "").trim().toUpperCase();
-  if (!t) return res.status(400).json({ error: "Missing ticker" });
+  const q = (req.query.ticker || req.query.q || "").trim().toUpperCase();
+  if (!q) return res.status(400).json({ error: "Missing ticker" });
+
+  const API = process.env.ALPHA_KEY;
 
   try {
-    const symbol = `${t}.NS`;
+    // 1. SYMBOL SEARCH
+    const searchUrl = `https://www.alphavantage.co/query?function=SYMBOL_SEARCH&keywords=${q}&apikey=${API}`;
+    const search = await fetch(searchUrl).then(r => r.json());
 
-    const quote = await fetch(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${process.env.FINNHUB_API_KEY}`).then(r => r.json());
-    const profile = await fetch(`https://finnhub.io/api/v1/stock/profile2?symbol=${symbol}&token=${process.env.FINNHUB_API_KEY}`).then(r => r.json());
-    const metrics = await fetch(`https://finnhub.io/api/v1/stock/metric?symbol=${symbol}&metric=all&token=${process.env.FINNHUB_API_KEY}`).then(r => r.json());
+    // 2. GLOBAL QUOTE (try NSE first)
+    const quoteUrl = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${q}.NS&apikey=${API}`;
+    const quote = await fetch(quoteUrl).then(r => r.json());
 
     res.json({
-      symbol,
-      quote,
-      profile,
-      metrics
+      input: q,
+      search,
+      quote
     });
 
   } catch (e) {
