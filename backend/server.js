@@ -1,8 +1,7 @@
 const express = require("express");
 const cors = require("cors");
-const fetch = require("node-fetch");
 const fetchStock = require("./fetchStock");
-const nifty500 = require("./nifty500.json");
+const nseFetch = require("./nseClient");
 
 const app = express();
 app.use(cors());
@@ -14,59 +13,20 @@ app.get("/api/test", (req, res) => {
   res.json({ status: "ok" });
 });
 
-async function getAllStocks(extraTickers = []) {
-  const now = Date.now();
+// GLOBAL SEARCH
+app.get("/api/global", async (req, res) => {
+  const q = (req.query.ticker || req.query.q || "").trim().toUpperCase();
+  if (!q) return res.status(400).json({ error: "Missing ticker" });
 
-  if (now - cacheTime < 10 * 60 * 1000 && Object.keys(cache).length) {
-    return cache;
-  }
+  const url = `https://www.nseindia.com/api/search/autocomplete?q=${q}`;
+  const search = await nseFetch(url);
 
-  const tickers = [...new Set([...nifty500, ...extraTickers])]
-    .map(t => t.trim().toUpperCase())
-    .filter(Boolean);
+  const quote = await fetchStock(q);
 
-  const results = {};
-  for (const t of tickers) {
-    const data = await fetchStock(t);
-    if (data) results[t] = data;
-  }
-
-  cache = results;
-  cacheTime = now;
-
-  return results;
-}
-
-app.get("/api/search", (req, res) => {
-  const q = (req.query.q || "").trim().toUpperCase();
-  if (!q) return res.json([]);
-  const matches = nifty500.filter(t => t.includes(q));
-  res.json(matches);
+  res.json({ input: q, search, quote });
 });
 
-app.get("/api/screen", async (req, res) => {
-  try {
-    const data = await getAllStocks();
-    res.json(Object.values(data));
-  } catch (e) {
-    console.error("Screen error:", e);
-    res.status(500).json({ error: "Screening failed" });
-  }
-});
-
-app.get("/api/stocks", async (req, res) => {
-  try {
-    const extra = req.query.extra
-      ? req.query.extra.split(",").map(s => s.trim().toUpperCase())
-      : [];
-    const data = await getAllStocks(extra);
-    res.json(Object.values(data));
-  } catch (e) {
-    console.error("Stocks error:", e);
-    res.status(500).json({ error: "Internal error" });
-  }
-});
-
+// SINGLE STOCK
 app.get("/api/stock", async (req, res) => {
   const t = (req.query.ticker || "").trim().toUpperCase();
   if (!t) return res.status(400).json({ error: "Missing ticker" });
@@ -77,32 +37,43 @@ app.get("/api/stock", async (req, res) => {
   res.json(data);
 });
 
-// GLOBAL SEARCH using TwelveData
-app.get("/api/global", async (req, res) => {
-  const q = (req.query.ticker || req.query.q || "").trim().toUpperCase();
-  if (!q) return res.status(400).json({ error: "Missing ticker" });
+// SCREEN (NIFTY 500)
+app.get("/api/screen", async (req, res) => {
+  const now = Date.now();
 
-  const API = process.env.TWELVE_KEY;
-
-  try {
-    // symbol search
-    const searchUrl = new URL("https://api.twelvedata.com/symbol_search");
-    searchUrl.searchParams.set("apikey", API);
-    searchUrl.searchParams.set("symbol", q);
-    searchUrl.searchParams.set("exchange", "NSE");
-    const search = await fetch(searchUrl.toString()).then(r => r.json());
-
-    // quote
-    const quoteUrl = new URL("https://api.twelvedata.com/quote");
-    quoteUrl.searchParams.set("apikey", API);
-    quoteUrl.searchParams.set("symbol", `${q}.NSE`);
-    const quote = await fetch(quoteUrl.toString()).then(r => r.json());
-
-    res.json({ input: q, search, quote });
-  } catch (e) {
-    console.error("Global error:", e);
-    res.status(500).json({ error: e.message });
+  if (now - cacheTime < 10 * 60 * 1000 && Object.keys(cache).length) {
+    return res.json(Object.values(cache));
   }
+
+  const url = `https://www.nseindia.com/api/equity-stockIndices?index=NIFTY%20500`;
+  const data = await nseFetch(url);
+
+  if (!data || !data.data) return res.status(500).json({ error: "NSE error" });
+
+  const results = {};
+
+  for (const s of data.data) {
+    results[s.symbol] = {
+      t: s.symbol,
+      n: s.symbol,
+      p: s.lastPrice,
+      h: s.weekHighLow?.max,
+      l: s.weekHighLow?.min,
+      mc: s.marketCap,
+      s: s.industry || "Unknown",
+      de: 0,
+      pr: 0,
+      pl: 0,
+      rg: 0,
+      roe: 0,
+      cr: 0
+    };
+  }
+
+  cache = results;
+  cacheTime = now;
+
+  res.json(Object.values(results));
 });
 
 const PORT = process.env.PORT || 10000;
