@@ -7,25 +7,26 @@
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="assets/styles.css">
 </head>
+
 <script>
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("service-worker.js");
   }
 </script>
+
 <body class="theme-dark">
   <div id="app">
+
     <header class="app-header">
       <div class="app-title">StockScout</div>
-      <button id="themeToggle" class="icon-btn" aria-label="Toggle theme">
-        🌓
-      </button>
+      <button id="themeToggle" class="icon-btn" aria-label="Toggle theme">🌓</button>
     </header>
 
     <main class="app-main">
+
+      <!-- HOME TAB -->
       <section id="tab-home" class="tab active">
-        <div class="section-header">
-          <h2>Overview</h2>
-        </div>
+        <div class="section-header"><h2>Overview</h2></div>
         <div id="homeContent" class="cards-list">
           <div class="card info-card">
             <div class="card-title">Welcome</div>
@@ -36,10 +37,9 @@
         </div>
       </section>
 
+      <!-- SCREEN TAB -->
       <section id="tab-screen" class="tab">
-        <div class="section-header">
-          <h2>Screen</h2>
-        </div>
+        <div class="section-header"><h2>Screen</h2></div>
 
         <div class="filters-scroll">
           <div class="filter-chip">
@@ -63,43 +63,40 @@
         <div id="screenResults" class="cards-list"></div>
       </section>
 
+      <!-- SEARCH TAB -->
       <section id="tab-search" class="tab">
-        <div class="section-header">
-          <h2>Search</h2>
-        </div>
+        <div class="section-header"><h2>Search</h2></div>
+
         <div class="search-bar">
-          <input id="searchInput" type="text" placeholder="Enter NSE symbol (e.g., TCS, RELIANCE)">
+          <input id="searchInput" type="text" placeholder="Search stocks (e.g., RELIANCE, TCS)">
+          <div id="autocompleteList" class="autocomplete-list"></div>
           <button id="btnSearch" class="primary-btn">Search</button>
         </div>
+
         <div id="searchResult" class="cards-list"></div>
       </section>
 
+      <!-- WATCHLIST TAB -->
       <section id="tab-watchlist" class="tab">
-        <div class="section-header">
-          <h2>Watchlist</h2>
-        </div>
+        <div class="section-header"><h2>Watchlist</h2></div>
+
         <div class="search-bar">
           <input id="customTicker" type="text" placeholder="Add custom NSE symbol (e.g., IIFL)">
           <button id="btnAddCustom" class="secondary-btn">Add</button>
         </div>
+
         <div id="watchlist" class="chips-list"></div>
       </section>
+
     </main>
 
     <nav class="bottom-nav">
-      <button class="nav-item active" data-tab="home">
-        <span>Home</span>
-      </button>
-      <button class="nav-item" data-tab="screen">
-        <span>Screen</span>
-      </button>
-      <button class="nav-item" data-tab="search">
-        <span>Search</span>
-      </button>
-      <button class="nav-item" data-tab="watchlist">
-        <span>Watchlist</span>
-      </button>
+      <button class="nav-item active" data-tab="home"><span>Home</span></button>
+      <button class="nav-item" data-tab="screen"><span>Screen</span></button>
+      <button class="nav-item" data-tab="search"><span>Search</span></button>
+      <button class="nav-item" data-tab="watchlist"><span>Watchlist</span></button>
     </nav>
+
   </div>
 
   <script src="assets/app.js"></script>
