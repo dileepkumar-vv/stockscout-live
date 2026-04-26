@@ -16,7 +16,7 @@ app.get("/api/test", (req, res) => {
 async function getAllStocks(extraTickers = []) {
   const now = Date.now();
 
-  if (now - cacheTime < 5 * 60 * 1000 && Object.keys(cache).length) {
+  if (now - cacheTime < 10 * 60 * 1000 && Object.keys(cache).length) {
     return cache;
   }
 
