@@ -80,7 +80,7 @@ app.get("/api/stock", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
+
 app.get("/api/global", async (req, res) => {
   const q = (req.query.ticker || req.query.q || "").trim().toUpperCase();
   if (!q) return res.status(400).json({ error: "Missing ticker" });
@@ -106,3 +106,4 @@ app.get("/api/global", async (req, res) => {
     res.status(500).json({ error: e.message });
   }
 });
+app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
