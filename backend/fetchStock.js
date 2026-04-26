@@ -1,18 +1,18 @@
 const fetch = require("node-fetch");
 const sectors = require("./sectors.json");
 
-const API_KEY = process.env.FINNHUB_API_KEY;
-const BASE = "https://finnhub.io/api/v1";
+const API = process.env.ALPHA_KEY;
 
-async function callFinnhub(path, params = {}) {
-  const url = new URL(BASE + path);
-  url.searchParams.set("token", API_KEY);
+async function alpha(functionName, params) {
+  const url = new URL("https://www.alphavantage.co/query");
+  url.searchParams.set("function", functionName);
+  url.searchParams.set("apikey", API);
+
   for (const [k, v] of Object.entries(params)) {
     url.searchParams.set(k, v);
   }
 
   const resp = await fetch(url.toString());
-  if (!resp.ok) throw new Error(`Finnhub error ${resp.status}`);
   return resp.json();
 }
 
@@ -20,32 +20,34 @@ async function fetchStock(ticker) {
   const symbol = `${ticker}.NS`;
 
   try {
-    const quote = await callFinnhub("/quote", { symbol });
-    const profile = await callFinnhub("/stock/profile2", { symbol });
-    const metrics = await callFinnhub("/stock/metric", {
-      symbol,
-      metric: "all"
-    });
+    // 1. GLOBAL QUOTE (price)
+    const quote = await alpha("GLOBAL_QUOTE", { symbol });
 
-    const m = metrics.metric || {};
+    // 2. OVERVIEW (fundamentals)
+    const overview = await alpha("OVERVIEW", { symbol });
+
+    if (!quote["Global Quote"] || !overview.Symbol) {
+      return null;
+    }
 
     return {
       t: ticker,
-      n: profile.name || ticker,
-      p: quote.c || 0,
-      h: m["52WeekHigh"] || 0,
-      l: m["52WeekLow"] || 0,
-      de: m.totalDebtToEquity || 0,
+      n: overview.Name || ticker,
+      p: Number(quote["Global Quote"]["05. price"] || 0),
+      h: Number(overview["52WeekHigh"] || 0),
+      l: Number(overview["52WeekLow"] || 0),
+      de: Number(overview["DebtToEquity"] || 0),
       pr: 0,
       pl: 0,
-      rg: m.revenueGrowth3Y || 0,
-      roe: m.roeTTM || 0,
-      mc: profile.marketCapitalization || 0,
-      cr: m.currentRatioAnnual || 0,
-      s: sectors[ticker] || profile.finnhubIndustry || "Unknown"
+      rg: Number(overview["QuarterlyRevenueGrowthYOY"] || 0),
+      roe: Number(overview["ReturnOnEquityTTM"] || 0),
+      mc: Number(overview["MarketCapitalization"] || 0),
+      cr: Number(overview["CurrentRatio"] || 0),
+      s: sectors[ticker] || overview.Sector || "Unknown"
     };
+
   } catch (e) {
-    console.log("Fetch error for", ticker, e.message);
+    console.log("Alpha error:", e.message);
     return null;
   }
 }
