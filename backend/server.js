@@ -68,6 +68,9 @@ app.get("/api/stocks", async (req, res) => {
 
 app.get("/api/stock", async (req, res) => {
   const t = (req.query.ticker || "").trim().toUpperCase();
+
+
+  
   if (!t) return res.status(400).json({ error: "Missing ticker" });
 
   const data = await fetchStock(t);
@@ -78,3 +81,26 @@ app.get("/api/stock", async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
+
+app.get("/api/global", async (req, res) => {
+  const t = (req.query.ticker || "").trim().toUpperCase();
+  if (!t) return res.status(400).json({ error: "Missing ticker" });
+
+  try {
+    const symbol = `${t}.NS`;
+
+    const quote = await fetch(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${process.env.FINNHUB_API_KEY}`).then(r => r.json());
+    const profile = await fetch(`https://finnhub.io/api/v1/stock/profile2?symbol=${symbol}&token=${process.env.FINNHUB_API_KEY}`).then(r => r.json());
+    const metrics = await fetch(`https://finnhub.io/api/v1/stock/metric?symbol=${symbol}&metric=all&token=${process.env.FINNHUB_API_KEY}`).then(r => r.json());
+
+    res.json({
+      symbol,
+      quote,
+      profile,
+      metrics
+    });
+
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
