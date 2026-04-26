@@ -1,4 +1,5 @@
 const API_BASE = "https://stockscout-live.onrender.com";
+const STORAGE_KEY = "stockscout7_filters_v1";
 
 const state = {
   sector: "ALL",
@@ -16,9 +17,57 @@ const els = {
   mc: document.getElementById("mc"),
   screenerQuery: document.getElementById("screenerQuery"),
   runScreen: document.getElementById("runScreen"),
+  resetFilters: document.getElementById("resetFilters"),
   tableBody: document.querySelector("#resultsTable tbody"),
   sectorButtons: document.querySelectorAll(".sector-btn")
 };
+
+const DEFAULTS = {
+  fall52: 30,
+  promHold: 35,
+  revGrowth: 10,
+  roe: 8,
+  de: 1,
+  pledged: 10,
+  cr: 1,
+  mc: 500
+};
+
+function loadSavedFilters() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return { ...DEFAULTS };
+    const parsed = JSON.parse(raw);
+    return { ...DEFAULTS, ...parsed };
+  } catch {
+    return { ...DEFAULTS };
+  }
+}
+
+function saveFilters() {
+  const values = {
+    fall52: Number(els.fall52.value) || DEFAULTS.fall52,
+    promHold: Number(els.promHold.value) || DEFAULTS.promHold,
+    revGrowth: Number(els.revGrowth.value) || DEFAULTS.revGrowth,
+    roe: Number(els.roe.value) || DEFAULTS.roe,
+    de: Number(els.de.value) || DEFAULTS.de,
+    pledged: Number(els.pledged.value) || DEFAULTS.pledged,
+    cr: Number(els.cr.value) || DEFAULTS.cr,
+    mc: Number(els.mc.value) || DEFAULTS.mc
+  };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(values));
+}
+
+function applyFiltersToInputs(values) {
+  els.fall52.value = values.fall52;
+  els.promHold.value = values.promHold;
+  els.revGrowth.value = values.revGrowth;
+  els.roe.value = values.roe;
+  els.de.value = values.de;
+  els.pledged.value = values.pledged;
+  els.cr.value = values.cr;
+  els.mc.value = values.mc;
+}
 
 function buildScreenerQuery() {
   const fall = Number(els.fall52.value) || 0;
@@ -77,12 +126,10 @@ function passesFilters(stock) {
 
 function renderTable() {
   els.tableBody.innerHTML = "";
-
   const filtered = state.data.filter(passesFilters);
 
   filtered.forEach(s => {
     const tr = document.createElement("tr");
-
     const f = fallFromHigh(s.p, s.h);
 
     tr.innerHTML = `
@@ -116,34 +163,73 @@ async function loadData() {
     renderTable();
   } catch (e) {
     console.error(e);
-    alert("Failed to load data");
+    alert("Failed to load data from backend.");
   } finally {
     els.runScreen.disabled = false;
     els.runScreen.textContent = "Run Screen";
   }
 }
 
-function initEvents() {
-  [
-    els.fall52,
-    els.de,
-    els.promHold,
-    els.pledged,
-    els.revGrowth,
-    els.roe,
-    els.cr,
-    els.mc
-  ].forEach(input => {
-    input.addEventListener("input", () => {
+function validateInput(el, { min = 0, max = null } = {}) {
+  const row = el.closest(".input-row");
+  const val = el.value === "" ? null : Number(el.value);
+  let valid = true;
+
+  if (val === null || Number.isNaN(val)) valid = false;
+  if (valid && val < min) valid = false;
+  if (valid && max !== null && val > max) valid = false;
+
+  if (!valid) {
+    row.classList.add("invalid");
+  } else {
+    row.classList.remove("invalid");
+  }
+
+  return valid;
+}
+
+function attachFilterEvents() {
+  const config = {
+    fall52: { min: 0 },
+    promHold: { min: 0, max: 100 },
+    revGrowth: { min: 0 },
+    roe: { min: 0 },
+    de: { min: 0 },
+    pledged: { min: 0, max: 100 },
+    cr: { min: 0 },
+    mc: { min: 0 }
+  };
+
+  Object.entries(config).forEach(([key, rules]) => {
+    const el = els[key];
+    el.addEventListener("input", () => {
+      validateInput(el, rules);
+      saveFilters();
       buildScreenerQuery();
       renderTable();
     });
+    el.addEventListener("blur", () => {
+      if (!validateInput(el, rules)) {
+        el.value = DEFAULTS[key];
+        saveFilters();
+        buildScreenerQuery();
+        renderTable();
+      }
+    });
   });
 
-  els.runScreen.addEventListener("click", () => {
-    loadData();
+  els.resetFilters.addEventListener("click", () => {
+    applyFiltersToInputs(DEFAULTS);
+    Object.values(els)
+      .filter(e => e && e.classList && e.classList.contains("input-row"))
+      .forEach(row => row.classList.remove("invalid"));
+    saveFilters();
+    buildScreenerQuery();
+    renderTable();
   });
+}
 
+function attachSectorEvents() {
   els.sectorButtons.forEach(btn => {
     btn.addEventListener("click", () => {
       els.sectorButtons.forEach(b => b.classList.remove("active"));
@@ -155,8 +241,15 @@ function initEvents() {
 }
 
 function init() {
+  const saved = loadSavedFilters();
+  applyFiltersToInputs(saved);
   buildScreenerQuery();
-  initEvents();
+  attachFilterEvents();
+  attachSectorEvents();
+
+  els.runScreen.addEventListener("click", () => {
+    loadData();
+  });
 }
 
 init();
