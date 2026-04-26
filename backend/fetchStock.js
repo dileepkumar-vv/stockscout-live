@@ -1,3 +1,19 @@
+const fetch = require("node-fetch");
+const sectors = require("./sectors.json");
+
+const API = process.env.TWELVE_KEY;
+const BASE = "https://api.twelvedata.com";
+
+async function td(path, params) {
+  const url = new URL(BASE + path);
+  url.searchParams.set("apikey", API);
+  for (const [k, v] of Object.entries(params)) {
+    url.searchParams.set(k, v);
+  }
+  const r = await fetch(url.toString());
+  return r.json();
+}
+
 async function fetchStock(ticker) {
   const primary = `${ticker}.NSE`;
   const fallback = `${ticker}.NS`;
@@ -5,7 +21,6 @@ async function fetchStock(ticker) {
   try {
     let quote = await td("/quote", { symbol: primary });
 
-    // If primary fails, try fallback
     if (!quote || quote.code) {
       quote = await td("/quote", { symbol: fallback });
     }
@@ -35,3 +50,5 @@ async function fetchStock(ticker) {
     return null;
   }
 }
+
+module.exports = fetchStock;
