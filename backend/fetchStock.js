@@ -2,14 +2,22 @@ const fetch = require("node-fetch");
 const sectors = require("./sectors.json");
 
 async function fetchStock(ticker) {
-  try {
-    const url = `https://query2.finance.yahoo.com/v10/finance/quoteSummary/${ticker}.NS?modules=price,summaryDetail,defaultKeyStatistics,financialData`;
+  const symbol = `${ticker}.NS`;
 
+  const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(
+    symbol
+  )}`;
+
+  try {
     const resp = await fetch(url, {
       headers: {
-        "User-Agent": "Mozilla/5.0",
-        "Accept": "application/json"
-      }
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0 Safari/537.36",
+        Accept: "application/json,text/plain,*/*",
+        Connection: "keep-alive",
+        Referer: "https://finance.yahoo.com/"
+      },
+      timeout: 8000
     });
 
     if (!resp.ok) {
@@ -18,33 +26,39 @@ async function fetchStock(ticker) {
     }
 
     const data = await resp.json();
-    if (!data.quoteSummary || !data.quoteSummary.result) {
-      console.log("Invalid Yahoo data:", ticker);
+    const r = data.quoteResponse?.result?.[0];
+    if (!r) {
+      console.log("No quote data for:", ticker);
       return null;
     }
 
-    const r = data.quoteSummary.result[0];
+    const price = r.regularMarketPrice ?? 0;
+    const high = r.fiftyTwoWeekHigh ?? 0;
+    const low = r.fiftyTwoWeekLow ?? 0;
 
-    const pct = v => (typeof v === "number" ? Math.round(v * 100) : 0);
-    const cr = v => (typeof v === "number" ? Math.round(v / 10000000) : 0);
+    const pct = v =>
+      typeof v === "number" ? Math.round(v * 100) : 0;
 
-    const price = r.price.regularMarketPrice?.raw || 0;
-    const high = r.summaryDetail.fiftyTwoWeekHigh?.raw || 0;
-    const low = r.summaryDetail.fiftyTwoWeekLow?.raw || 0;
+    const mcCr =
+      typeof r.marketCap === "number"
+        ? Math.round(r.marketCap / 10000000)
+        : 0;
 
+    // Yahoo quote endpoint doesn’t expose all fundamentals;
+    // we keep placeholders where needed.
     return {
       t: ticker,
-      n: r.price.longName || ticker,
+      n: r.longName || r.shortName || ticker,
       p: price,
       h: high,
       l: low,
-      de: r.defaultKeyStatistics.debtToEquity?.raw || 0,
-      pr: pct(r.defaultKeyStatistics.heldPercentInsiders?.raw),
-      pl: 0, // pledged – if you later get a source, plug it here
-      rg: pct(r.financialData.revenueGrowth?.raw),
-      roe: pct(r.financialData.returnOnEquity?.raw),
-      mc: cr(r.price.marketCap?.raw),
-      cr: r.financialData.currentRatio?.raw || 0,
+      de: 0,          // placeholder – not in quote endpoint
+      pr: 0,          // promoter holding – not available
+      pl: 0,          // pledged – not available
+      rg: 0,          // revenue growth – not available
+      roe: 0,         // ROE – not available
+      mc: mcCr,
+      cr: 0,          // current ratio – not available
       s: sectors[ticker] || "Unknown"
     };
   } catch (e) {
