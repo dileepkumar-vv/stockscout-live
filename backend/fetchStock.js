@@ -15,16 +15,21 @@ async function td(path, params) {
 }
 
 async function fetchStock(ticker) {
-  const primary = `${ticker}.NSE`;
-  const fallback = `${ticker}.NS`;
+  ticker = ticker.trim().toUpperCase();
+
+  const NSE = `${ticker}.NSE`;
+  const BSE = `${ticker}.BSE`;
 
   try {
-    let quote = await td("/quote", { symbol: primary });
+    // 1) Try NSE first (will fail in free tier)
+    let quote = await td("/quote", { symbol: NSE });
 
+    // 2) If NSE fails, fallback to BSE
     if (!quote || quote.code) {
-      quote = await td("/quote", { symbol: fallback });
+      quote = await td("/quote", { symbol: BSE });
     }
 
+    // 3) If both fail → no data
     if (!quote || quote.code || !quote.symbol) {
       return null;
     }
@@ -35,14 +40,14 @@ async function fetchStock(ticker) {
       p: Number(quote.close || 0),
       h: Number(quote.fifty_two_week?.high || 0),
       l: Number(quote.fifty_two_week?.low || 0),
+      mc: Number(quote.market_cap || 0),
       de: 0,
       pr: 0,
       pl: 0,
       rg: 0,
       roe: 0,
-      mc: Number(quote.market_cap || 0),
       cr: 0,
-      s: quote.exchange || "NSE"
+      s: quote.exchange || "BSE"
     };
 
   } catch (e) {
